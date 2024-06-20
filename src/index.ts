@@ -20,30 +20,12 @@ app.get("/users", async (req, res) => {
   }
 });
 
-// Create a new user
-// app.post("/users", async (req, res) => {
-//   const { name, email } = req.body;
-//   try {
-//     const newUser = await prisma.user.create({
-//       data: {
-//         name,
-//         email,
-//       },
-//     });
-//     res.status(201).json(newUser);
-//   } catch (error) {
-//     console.error(error);
-//     res
-//       .status(500)
-//       .json({ error: "An error occurred while creating the user." });
-//   }
-// });
 
 // Get all posts with user information
 app.get("/posts", async (req, res) => {
   try {
     const posts = await prisma.post.findMany({
-      include: { user: true },
+      include: { user: true, reactions: true },
     });
     res.json(posts);
   } catch (error) {
@@ -54,8 +36,12 @@ app.get("/posts", async (req, res) => {
 
 // Create a new post
 app.post("/posts", async (req, res) => {
-  const { userId, title, body } = req.body;
+  let { userId, title, body } = req.body;
   try {
+    // Ensure userId is an integer
+    userId = parseInt(userId, 10);
+
+    // Create the post first
     const newPost = await prisma.post.create({
       data: {
         userId,
@@ -63,6 +49,14 @@ app.post("/posts", async (req, res) => {
         body,
       },
     });
+
+    // Create the reaction linked to the post
+    await prisma.reaction.create({
+      data: {
+        postId: newPost.id,
+      },
+    });
+
     res.status(201).json(newPost);
   } catch (error) {
     console.error(error);
@@ -71,6 +65,36 @@ app.post("/posts", async (req, res) => {
       .json({ error: "An error occurred while creating the post." });
   }
 });
+
+app.put("/posts/:postId/reactions", async (req, res) => {
+  const { postId } = req.params;
+  const { thumbsUp, wow, heart, rocket, coffee } = req.body;
+
+  try {
+    // Ensure postId is an integer
+    const id = parseInt(postId, 10);
+
+    // Update the reactions
+    const updatedReaction = await prisma.reaction.update({
+      where: { postId: id },
+      data: {
+        thumbsUp,
+        wow,
+        heart,
+        rocket,
+        coffee,
+      },
+    });
+
+    res.status(200).json(updatedReaction);
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while updating the reactions." });
+  }
+});
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

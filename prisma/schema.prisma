@@ -15,9 +15,22 @@ model User {
 }
 
 model Post {
-  id     Int    @id @default(autoincrement())
-  title  String
-  body   String
-  userId Int
-  user   User   @relation(fields: [userId], references: [id])
+  id         Int         @id @default(autoincrement())
+  title      String
+  body       String
+  userId     Int
+  user       User        @relation(fields: [userId], references: [id])
+  createdAt  DateTime    @default(now())
+  reactions  Reaction?   // One-to-one relationship
+}
+
+model Reaction {
+  id       Int    @id @default(autoincrement())
+  thumbsUp Int    @default(0)
+  wow      Int    @default(0)
+  heart    Int    @default(0)
+  rocket   Int    @default(0)
+  coffee   Int    @default(0)
+  postId   Int    @unique
+  post     Post   @relation(fields: [postId], references: [id])
 }
